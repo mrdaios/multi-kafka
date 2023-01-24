@@ -8,6 +8,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.autoconfigure.kafka.DefaultKafkaProducerFactoryCustomizer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.boot.context.properties.bind.BindResult;
@@ -36,7 +37,7 @@ public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefini
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
     }
 
-    private void markPrimaryBeanDefinition(BeanDefinitionRegistry registry, Class clazz) {
+    private void markPrimaryBeanDefinition(BeanDefinitionRegistry registry, Class<?> clazz) {
         String[] beanDefinitionNames = registry.getBeanDefinitionNames();
         // search kafka config
         boolean hasPrimary = false;
@@ -78,7 +79,12 @@ public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefini
     }
 
     private void registerDynamicKafkaConfig(BeanDefinitionRegistry registry) {
-        Map<String, KafkaProperties> kafkaPropertiesMap = new HashMap<>();
+        final ObjectProvider<DefaultKafkaProducerFactoryCustomizer> kafkaProducerFactoryCustomizers;
+        if (registry instanceof DefaultListableBeanFactory) {
+            kafkaProducerFactoryCustomizers = ((DefaultListableBeanFactory) registry).getBeanProvider(DefaultKafkaProducerFactoryCustomizer.class);
+        } else {
+            kafkaProducerFactoryCustomizers = null;
+        }
         Binder binder = Binder.get(environment);
         // parse Kafka config
         BindResult<MultikafkaProperties> propertiesBindResult = binder.bind(SPRING_KAFKA_MULTI_PREFIX, Bindable.of(MultikafkaProperties.class));
@@ -95,7 +101,7 @@ public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefini
                 //register KafkaTemplate
                 String templateBeanName = kafkaPropertiesEntry.getKey() + "KafkaTemplate";
                 if (!registry.containsBeanDefinition(templateBeanName)) {
-                    BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(KafkaTemplate.class, () -> new KafkaTemplate<>(kafkaProducerFactory(null, kafkaProperties)));
+                    BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(KafkaTemplate.class, () -> new KafkaTemplate<>(kafkaProducerFactory(kafkaProducerFactoryCustomizers, kafkaProperties)));
                     registry.registerBeanDefinition(templateBeanName, beanDefinitionBuilder.getBeanDefinition());
                 }
                 //register KafkaListenerContainerFactory
@@ -120,7 +126,7 @@ public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefini
         if (transactionIdPrefix != null) {
             factory.setTransactionIdPrefix(transactionIdPrefix);
         }
-//        customizers.orderedStream().forEach((customizer) -> customizer.customize(factory));
+        customizers.orderedStream().forEach((customizer) -> customizer.customize(factory));
         return factory;
     }
 
