@@ -21,7 +21,7 @@ jobs:
           java-version: 1.8
       # 推送jar包至maven中央仓库
       - name: Publish to Apache Maven Central
-        uses: samuelmeuli/action-maven-publish@v1
+        uses: samuelmeuli/action-maven-publish@v1.4.0
         with:
           # Nexus用户名环境变量
           nexus_username: ${{ secrets.MAVEN_USERNAME }}
