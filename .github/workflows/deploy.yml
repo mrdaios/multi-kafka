@@ -40,11 +40,3 @@ jobs:
           MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
           # gpg短密码
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-      # Nexus自动部署
-      - name: Release on nexus
-        uses: monkeyWie/maven-nexus-release@v1
-        with:
-          # Nexus用户名
-          maven-repo-server-username: ${{ secrets.MAVEN_USERNAME }}
-          # Nexus密码
-          maven-repo-server-password: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
