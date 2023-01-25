@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.mrdaios</groupId>
     <artifactId>multi-kafka-parent</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <packaging>pom</packaging>
     <name>multi-kafka</name>
     <description>支持配置多套kafka</description>
@@ -57,7 +57,7 @@
             <dependency>
                 <groupId>io.github.mrdaios</groupId>
                 <artifactId>multi-kafka-spring-boot-starter-autoconfigurer</artifactId>
-                <version>0.0.1</version>
+                <version>0.0.2</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
