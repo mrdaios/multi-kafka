@@ -20,7 +20,10 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
 
@@ -101,7 +104,7 @@ public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefini
                 //register KafkaTemplate
                 String templateBeanName = kafkaPropertiesEntry.getKey() + "KafkaTemplate";
                 if (!registry.containsBeanDefinition(templateBeanName)) {
-                    BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(KafkaTemplate.class, () -> new KafkaTemplate<>(kafkaProducerFactory(kafkaProducerFactoryCustomizers, kafkaProperties)));
+                    BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(KafkaTemplate.class, () -> new KafkaTemplate<>(kafkaProducerFactory(kafkaProducerFactoryCustomizers, kafkaPropertiesEntry)));
                     registry.registerBeanDefinition(templateBeanName, beanDefinitionBuilder.getBeanDefinition());
                 }
                 //register KafkaListenerContainerFactory
@@ -120,9 +123,12 @@ public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefini
         }
     }
 
-    private ProducerFactory<?, ?> kafkaProducerFactory(ObjectProvider<DefaultKafkaProducerFactoryCustomizer> customizers, KafkaProperties properties) {
-        DefaultKafkaProducerFactory<?, ?> factory = new DefaultKafkaProducerFactory<>(properties.buildProducerProperties());
-        String transactionIdPrefix = properties.getProducer().getTransactionIdPrefix();
+    private ProducerFactory<?, ?> kafkaProducerFactory(ObjectProvider<DefaultKafkaProducerFactoryCustomizer> customizers, Map.Entry<String, KafkaProperties> kafkaPropertiesEntry) {
+        Map<String, Object> producerProperties = kafkaPropertiesEntry.getValue().buildProducerProperties();
+        // for DefaultKafkaProducerFactoryCustomizer identify.
+        producerProperties.put("beanName", kafkaPropertiesEntry.getKey() + "KafkaProperties");
+        DefaultKafkaProducerFactory<?, ?> factory = new DefaultKafkaProducerFactory<>(producerProperties);
+        String transactionIdPrefix = kafkaPropertiesEntry.getValue().getProducer().getTransactionIdPrefix();
         if (transactionIdPrefix != null) {
             factory.setTransactionIdPrefix(transactionIdPrefix);
         }
