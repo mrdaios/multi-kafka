@@ -9,7 +9,6 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.boot.autoconfigure.kafka.DefaultKafkaProducerFactoryCustomizer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Bindable;
@@ -82,9 +81,9 @@ public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefini
     }
 
     private void registerDynamicKafkaConfig(BeanDefinitionRegistry registry) {
-        final ObjectProvider<DefaultKafkaProducerFactoryCustomizer> kafkaProducerFactoryCustomizers;
+        final ObjectProvider<MultiKafkaProducerFactoryCustomizer> kafkaProducerFactoryCustomizers;
         if (registry instanceof DefaultListableBeanFactory) {
-            kafkaProducerFactoryCustomizers = ((DefaultListableBeanFactory) registry).getBeanProvider(DefaultKafkaProducerFactoryCustomizer.class);
+            kafkaProducerFactoryCustomizers = ((DefaultListableBeanFactory) registry).getBeanProvider(MultiKafkaProducerFactoryCustomizer.class);
         } else {
             kafkaProducerFactoryCustomizers = null;
         }
@@ -123,16 +122,13 @@ public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefini
         }
     }
 
-    private ProducerFactory<?, ?> kafkaProducerFactory(ObjectProvider<DefaultKafkaProducerFactoryCustomizer> customizers, Map.Entry<String, KafkaProperties> kafkaPropertiesEntry) {
-        Map<String, Object> producerProperties = kafkaPropertiesEntry.getValue().buildProducerProperties();
-        // for DefaultKafkaProducerFactoryCustomizer identify.
-        producerProperties.put("beanName", kafkaPropertiesEntry.getKey() + "KafkaProperties");
-        DefaultKafkaProducerFactory<?, ?> factory = new DefaultKafkaProducerFactory<>(producerProperties);
+    private ProducerFactory<?, ?> kafkaProducerFactory(ObjectProvider<MultiKafkaProducerFactoryCustomizer> customizers, Map.Entry<String, KafkaProperties> kafkaPropertiesEntry) {
+        DefaultKafkaProducerFactory<?, ?> factory = new DefaultKafkaProducerFactory<>(kafkaPropertiesEntry.getValue().buildProducerProperties());
         String transactionIdPrefix = kafkaPropertiesEntry.getValue().getProducer().getTransactionIdPrefix();
         if (transactionIdPrefix != null) {
             factory.setTransactionIdPrefix(transactionIdPrefix);
         }
-        customizers.orderedStream().forEach((customizer) -> customizer.customize(factory));
+        customizers.orderedStream().forEach((customizer) -> customizer.customize(kafkaPropertiesEntry.getKey(), factory));
         return factory;
     }
 
