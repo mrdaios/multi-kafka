@@ -98,6 +98,8 @@ public class MultiKafkaBeanDefinitionRegistryPostProcessor implements BeanDefini
                 KafkaProperties kafkaProperties = kafkaPropertiesEntry.getValue();
                 if (!registry.containsBeanDefinition(propertiesBeanName)) {
                     BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(KafkaProperties.class, () -> kafkaProperties);
+                    // invalid KafkaProperties bind
+                    beanDefinitionBuilder.getBeanDefinition().setSynthetic(true);
                     registry.registerBeanDefinition(propertiesBeanName, beanDefinitionBuilder.getBeanDefinition());
                 }
                 //register KafkaTemplate
